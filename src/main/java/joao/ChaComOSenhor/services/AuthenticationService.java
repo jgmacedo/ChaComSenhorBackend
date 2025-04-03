@@ -12,6 +12,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service class for handling authentication-related operations such as login and registration.
+ */
 @Service
 public class AuthenticationService {
 
@@ -27,6 +30,13 @@ public class AuthenticationService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    /**
+     * Authenticates a user and generates a JWT token.
+     *
+     * @param login the user's login
+     * @param password the user's password
+     * @return a JWT token if authentication is successful
+     */
     public String login(String login, String password) {
         var usernamePassword = new UsernamePasswordAuthenticationToken(login, password);
         Authentication auth = authenticationManager.authenticate(usernamePassword);
@@ -34,6 +44,13 @@ public class AuthenticationService {
         return tokenService.generateToken(user);
     }
 
+    /**
+     * Registers a new user.
+     *
+     * @param registerDTO the data transfer object containing user registration details
+     * @return the newly registered user
+     * @throws RuntimeException if the username or email already exists
+     */
     public User register(RegisterDTO registerDTO) {
         if(userRepository.findByLogin(registerDTO.login()) != null) {
             throw new RuntimeException("Usuário já existe");
@@ -52,6 +69,4 @@ public class AuthenticationService {
 
         return userRepository.save(newUser);
     }
-
-
 }

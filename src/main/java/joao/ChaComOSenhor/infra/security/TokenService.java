@@ -12,41 +12,60 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+/**
+ * Service class for handling JWT token generation and validation.
+ */
 @Service
 public class TokenService {
 
     @Value("${api.security.token.secret}")
     private String secret;
 
+    /**
+     * Generates a JWT token for the given user.
+     *
+     * @param user the user for whom the token is generated
+     * @return the generated JWT token
+     * @throws RuntimeException if an error occurs while generating the token
+     */
     public String generateToken(User user) {
-        try{
+        try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             return JWT.create()
                     .withIssuer("ChaComOSenhor")
                     .withSubject(user.getLogin())
                     .withExpiresAt(genExpirationDate())
                     .sign(algorithm);
-        }
-        catch (JWTCreationException e){
+        } catch (JWTCreationException e) {
             throw new RuntimeException("Error while generating token", e);
         }
     }
 
+    /**
+     * Validates the given JWT token and returns the subject (user login).
+     *
+     * @param token the JWT token to validate
+     * @return the subject (user login) if the token is valid, or an empty string if invalid
+     */
     public String validateToken(String token) {
-        try{
+        try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             return JWT.require(algorithm)
                     .withIssuer("ChaComOSenhor")
                     .build()
                     .verify(token)
                     .getSubject();
-        }catch (JWTVerificationException e){
+        } catch (JWTVerificationException e) {
             return "";
         }
     }
 
+    /**
+     * Generates the expiration date for the JWT token.
+     *
+     * @return the expiration date as an Instant
+     */
     private Instant genExpirationDate() {
         return LocalDateTime.now().plusHours(1).toInstant(ZoneOffset.of("-03:00"));
     }
-
 }
