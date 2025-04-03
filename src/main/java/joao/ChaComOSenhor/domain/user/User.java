@@ -28,12 +28,12 @@ public class User implements UserDetails {
     private String name;
     private String email;
     private String password;
-    private String role;
+    private UserRole role;
     private String token;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role));
+        return List.of(new SimpleGrantedAuthority(role.getRole()));
     }
 
     @Override

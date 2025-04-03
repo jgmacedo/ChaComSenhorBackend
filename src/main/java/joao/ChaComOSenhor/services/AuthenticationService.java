@@ -2,6 +2,7 @@ package joao.ChaComOSenhor.services;
 
 import joao.ChaComOSenhor.domain.user.RegisterDTO;
 import joao.ChaComOSenhor.domain.user.User;
+import joao.ChaComOSenhor.domain.user.UserRole;
 import joao.ChaComOSenhor.infra.security.TokenService;
 import joao.ChaComOSenhor.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +48,7 @@ public class AuthenticationService {
         newUser.setPassword(encryptedPassword);
         newUser.setName(registerDTO.name());
         newUser.setEmail(registerDTO.email());
-        newUser.setRole("USER");
+        newUser.setRole(UserRole.valueOf("USER"));
 
         return userRepository.save(newUser);
     }
