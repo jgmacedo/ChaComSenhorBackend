@@ -1,11 +1,9 @@
 package joao.ChaComOSenhor.services;
 
-import jakarta.persistence.Column;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 import joao.ChaComOSenhor.domain.devotional.Devotional;
 import joao.ChaComOSenhor.repositories.DevotionalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
