@@ -1,12 +1,11 @@
 package joao.ChaComOSenhor.services;
 
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
+import joao.ChaComOSenhor.domain.bible_verse.BibleVerseCreationDTO;
 import joao.ChaComOSenhor.repositories.BibleVerseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class BibleVerseService {
@@ -17,6 +16,11 @@ public class BibleVerseService {
     /**
      * Save a new Bible verse
      */
+    public BibleVerse createBibleVerse(BibleVerseCreationDTO dto) {
+       BibleVerse bibleVerse = dto.toBibleVerse();
+       return saveBibleVerse(bibleVerse);
+    }
+
     public BibleVerse saveBibleVerse(BibleVerse bibleVerse) {
         // Format reference if not already formatted
         if (bibleVerse.getReference() == null || bibleVerse.getReference().isEmpty()) {
@@ -25,20 +29,6 @@ public class BibleVerseService {
         return bibleVerseRepository.save(bibleVerse);
     }
 
-    /**
-     * Get Bible verse by ID
-     */
-    public BibleVerse getBibleVerseById(Long id) {
-        return (BibleVerse) bibleVerseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Versículo bíblico não encontrado com ID: " + id));
-    }
-
-    /**
-     * Delete Bible verse
-     */
-    public void deleteBibleVerse(Long id) {
-        bibleVerseRepository.deleteById(id);
-    }
 
     /**
      * Format reference string in the pattern "Book Chapter:Verse"

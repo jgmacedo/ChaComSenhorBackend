@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Table(name = "devotionals")
@@ -22,7 +23,19 @@ public class Devotional {
     private String title;
 
     @Column(length = 3000)
-    private String content;
+    private String reflection;
+
+    @Column(length = 500)
+    private String prayer;
+
+    @Column(length = 1000)
+    private String practicalApplication;
+
+    @Column(length = 1000)
+    private String validationSources;
+
+    @Column(length = 500)
+    private String ethicalAlignment;
 
     private LocalDate date;
 

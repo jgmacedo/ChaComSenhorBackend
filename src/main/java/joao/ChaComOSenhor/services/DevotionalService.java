@@ -4,7 +4,6 @@ import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 import joao.ChaComOSenhor.domain.devotional.Devotional;
 import joao.ChaComOSenhor.repositories.DevotionalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -13,34 +12,39 @@ import java.util.logging.Logger;
 @Service
 public class DevotionalService {
     private static final Logger logger = Logger.getLogger(DevotionalService.class.getName());
+
     @Autowired
     private DevotionalRepository devotionalRepository;
+    private AiService aiService;
 
-    @Scheduled(cron = "0 1 0 * * *", zone = "America/Sao_Paulo")
-    public void createDailyDevotional() {
+    public Devotional createDailyDevotional(BibleVerse bibleVerse) {
         try {
             LocalDate today = LocalDate.now();
-            // Only create if no devotional exists for today
-            if(devotionalRepository.findByDate(today).isEmpty()) {
-                Devotional devotional = new Devotional();
-                devotional.setDate(today);
 
-                // Get a random Bible verse
-                BibleVerse verse = getRandomBibleVerse();
-                devotional.setBibleVerse(verse);
-
-                // Generate devotional title and content using ChatGPT
-                String title = generateDevotionalTitle(verse);
-                String content = generateDevotionalContent(verse);
-
-                devotional.setTitle(title);
-                devotional.setContent(content);
-
-                devotionalRepository.save(devotional);
-                logger.info("Devocional diária criada com sucesso para " + today);
+            // Check if a devotional already exists for today
+            if (devotionalRepository.findByDate(today).isPresent()) {
+                throw new RuntimeException("A devotional for today already exists");
             }
+
+            Devotional devotional = new Devotional();
+            devotional.setDate(today);
+            devotional.setBibleVerse(bibleVerse);
+
+            // First generate title
+            String title = aiService.generateDevotionalTitle(bibleVerse);
+            // Then pass title to content generation
+            String content = aiService.generateDevotionalContent(bibleVerse, title);
+
+            devotional.setTitle(title);
+            devotional.setContent(content);
+
+            devotionalRepository.save(devotional);
+            logger.info("Devocional diária criada com sucesso para " + today);
+
+            return devotional;
         } catch (Exception e) {
             logger.severe("Erro ao criar devocional diária: " + e.getMessage());
+            throw new RuntimeException("Failed to create daily devotional: " + e.getMessage(), e);
         }
     }
 
