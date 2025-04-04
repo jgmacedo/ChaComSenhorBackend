@@ -24,16 +24,26 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String login;
     private String name;
+    private String login;
     private String email;
     private String password;
     private UserRole role;
-    private String token;
+
+    public User(String name, String login, String email, String password){
+        this.name = name;
+        this.login = login;
+        this.email = email;
+        this.password = password;
+        this.role = UserRole.USER;
+    }
+
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.getRole()));
+        if(this.role == UserRole.ADMIN) return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
+        else return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     @Override
