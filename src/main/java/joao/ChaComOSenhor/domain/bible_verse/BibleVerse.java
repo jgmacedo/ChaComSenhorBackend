@@ -22,10 +22,6 @@ package joao.ChaComOSenhor.domain.bible_verse;
         @Column(length = 100)
         private String reference;
 
-        private String book;
-        private Integer chapter;
-        private Integer verse;
-
         // This constructor can be used for testing
         public BibleVerse(String reference, String text) {
             this.reference = reference;

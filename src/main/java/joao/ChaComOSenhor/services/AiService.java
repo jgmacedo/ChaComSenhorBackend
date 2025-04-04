@@ -1,103 +1,67 @@
 package joao.ChaComOSenhor.services;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Logger;
+import java.net.http.HttpRequest;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
+import joao.ChaComOSenhor.domain.devotional.Devotional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 @Service
 public class AiService {
-    private static final Logger logger = Logger.getLogger(AiService.class.getName());
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${openrouter.api.key:${OPENROUTER_API_KEY}}")
+    @Value("${openrouter.api.key}")
     private String openRouterApiKey;
 
-    @Value("${openrouter.api.url:https://openrouter.ai/api/v1/chat/completions}")
-    private String openRouterApiUrl;
+    @Value("${openrouter.api.url}")
+    private String openRouterUrl;
 
-    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public AiService() {
-        this.restTemplate = new RestTemplate();
-    }
-
-    public String generateDevotionalTitle(BibleVerse bibleVerse) {
-        String prompt = String.format(
-                "Generate a short, inspiring title for a devotional based on %s which says: '%s'",
-                bibleVerse.getReference(),
-                bibleVerse.getText()
+    private String generateFullPrompt(BibleVerse bibleVerse){
+        return String.format(
+                """     
+                        ANSWER ONLY THE JSON, NOTHING ELSE. Do not include formatting or explanations. You are a theologian and devotional writer. Given %s and %s, generate: An exact quote of the verse (ESV translation). A title reflecting the verse's theme. A 150-word reflection connecting the verse to daily Christian life. A short prayer based on the verse. A practical application step. Prioritize these 3 concepts: Source Quality: Prioritize well-regarded Christian authors and Scripture (ESV or NIV) to ensure doctrinal soundness 10. Validation: Add a review step (automated) to cross-check outputs against trusted theological resources 10. Ethical Alignment: Avoid controversial interpretations by restricting training data to widely accepted texts Avoid denominational bias and ensure doctrinal alignment with historic Christianity. Structure it exactly like this json template:
+                        {
+                          "exactQuote":
+                          "title":
+                          "reflection":
+                          "prayer":
+                          "practicalApplication":
+                          "supportingVerses":
+                        }
+                        """,
+                bibleVerse.getReference(), bibleVerse.getText()
         );
-
-        return callOpenRouterApi(prompt);
     }
 
-    public String generateDevotionalContent(BibleVerse bibleVerse, String title) {
-        String prompt = String.format(
-                "Write a devotional reflection (300-500 words) with the title '%s' based on the Bible verse %s which says: '%s'. " +
-                        "The content should directly relate to the title theme. " +
-                        "Include spiritual insights, practical application, and a prayer at the end.",
-                title,
-                bibleVerse.getReference(),
-                bibleVerse.getText()
-        );
+    public String sendPostToOpenRouter(BibleVerse bibleVerse) {
+    try {
+        var client = HttpClient.newHttpClient();
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(openRouterUrl))
+                .header("Authorization", "Bearer " + this.openRouterApiKey)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(generateFullPrompt(bibleVerse)))
+                .build();
 
-        return callOpenRouterApi(prompt);
-    }
+        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-    private String callOpenRouterApi(String prompt) {
-        try {
-            HttpClient client = HttpClient.newHttpClient();
-
-            // Create the message structure
-            Map<String, String> message = new HashMap<>();
-            message.put("role", "user");
-            message.put("content", prompt);
-
-            // Create the request payload
-            Map<String, Object> requestMap = new HashMap<>();
-            requestMap.put("model", "openai/gpt-3.5-turbo");
-            requestMap.put("messages", new Object[]{message});
-
-            // Convert map to JSON string
-            String requestBody = objectMapper.writeValueAsString(requestMap);
-
-            // Build the request
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(openRouterApiUrl))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + openRouterApiKey)
-                    .header("HTTP-Referer", "https://yourapp.com") // Replace with your site URL
-                    .header("X-Title", "Your App") // Replace with your app name
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                    .build();
-
-            // Send the request and get the response
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            // Parse the response to extract the content
-            JsonNode jsonResponse = objectMapper.readTree(response.body());
-
-            return jsonResponse
-                    .path("choices")
-                    .path(0)
-                    .path("message")
-                    .path("content")
-                    .asText();
+        return response.body();
         } catch (Exception e) {
-            e.printStackTrace();
-            return "Error calling AI API: " + e.getMessage();
+            throw new RuntimeException("Erro ao solicitar a devocional: " + e.getMessage(), e);
         }
+    }
 
+    public Devotional parseJsonToDevotional(String jsonResponse) {
+        try {
+            return objectMapper.readValue(jsonResponse, Devotional.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao parsear o JSON: " + e.getMessage(), e);
+        }
     }
 }

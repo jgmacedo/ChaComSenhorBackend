@@ -32,10 +32,7 @@ public class Devotional {
     private String practicalApplication;
 
     @Column(length = 1000)
-    private String validationSources;
-
-    @Column(length = 500)
-    private String ethicalAlignment;
+    private String supportingVerses;
 
     private LocalDate date;
 

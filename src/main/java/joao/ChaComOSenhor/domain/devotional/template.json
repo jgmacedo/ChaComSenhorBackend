@@ -1,0 +1,31 @@
+[{
+  "exactQuote": "Bible verse in ESV/NIV, formatted with verse numbers if applicable",
+  "title": "Concise, thematic title reflecting the verse's core message",
+  "reflection": "150-word reflection connecting the verse to Christian life, referencing trusted authors and Scripture (ESV/NIV). Focus on historic Christian theology, avoiding denominational bias.",
+  "prayer": "Short prayer rooted in the verse’s themes, addressing God with reverence and practical faith application.",
+  "practicalApplication": "Actionable step for individuals or groups, tied to the verse’s teaching and aligned with Scriptural principles.",
+  "supportingVerses": "Relevant supporting Bible verses (ESV/NIV)"
+},
+  {
+  "id": "gen-1743779054-Y9hl9YVfLNz4HrdgYSlQ",
+  "provider": "Chutes",
+  "model": "deepseek/deepseek-v3-base",
+  "object": "chat.completion",
+  "created": 1743779054,
+  "choices": [
+    {
+      "logprobs": null,
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "refusal": null
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 202,
+    "completion_tokens": 0,
+    "total_tokens": 202
+  }
+}]
