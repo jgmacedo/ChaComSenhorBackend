@@ -9,20 +9,7 @@ package joao.ChaComOSenhor.repositories;
      * Extends JpaRepository to provide CRUD operations.
      */
     public interface UserRepository extends JpaRepository<User, Long> {
-
-        /**
-         * Finds a User by their login.
-         *
-         * @param login the login of the user
-         * @return the UserDetails of the user with the given login
-         */
-        UserDetails findByLogin(String login);
-
-        /**
-         * Finds a User by their email.
-         *
-         * @param email the email of the user
-         * @return the User with the given email
-         */
+        // Change return type from UserDetails to User
+        User findByLogin(String login);
         User findByEmail(String email);
     }

@@ -1,20 +1,21 @@
 package joao.ChaComOSenhor.controllers;
 
-import joao.ChaComOSenhor.domain.user.UserRole;
+import joao.ChaComOSenhor.domain.user.*;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import joao.ChaComOSenhor.domain.user.LoginResponseDTO;
-import joao.ChaComOSenhor.domain.user.RegisterDTO;
-import joao.ChaComOSenhor.domain.user.User;
 import joao.ChaComOSenhor.infra.security.TokenService;
 import joao.ChaComOSenhor.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 @RestController
 @RequestMapping("/auth")
@@ -35,7 +36,7 @@ public class AuthenticationController {
         try {
             // Validate null fields
             if (dto.login() == null || dto.password() == null || dto.name() == null ||
-                    dto.email() == null || dto.role() == null) {
+                    dto.email() == null) {
                 return ResponseEntity.badRequest().body("All fields are required");
             }
 
@@ -65,15 +66,11 @@ public class AuthenticationController {
                 return ResponseEntity.badRequest().body("Email already registered");
             }
 
-            // Validate role
-            try {
-                UserRole.valueOf(String.valueOf(dto.role()));
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.badRequest().body("Invalid role. Must be either ADMIN or USER");
-            }
+            // Set role to USER
+            UserRole role = UserRole.USER;
 
             String encryptedPassword = new BCryptPasswordEncoder().encode(dto.password());
-            User newUser = new User(dto.name(), dto.login(), dto.email(), encryptedPassword, dto.role());
+            User newUser = new User(dto.name(), dto.login(), dto.email(), encryptedPassword, role);
 
             try {
                 this.userRepository.save(newUser);
@@ -94,14 +91,78 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody RegisterDTO dto) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody AuthenticationDTO dto) {
         try {
             var usernamePassword = new UsernamePasswordAuthenticationToken(dto.login(), dto.password());
             var auth = this.authenticationManager.authenticate(usernamePassword);
             var token = tokenService.generateToken((User) auth.getPrincipal());
             return ResponseEntity.ok(new LoginResponseDTO(token));
+        }catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            String stackTrace = sw.toString();
+            System.err.println("Full stack trace: " + stackTrace);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    @PostMapping("/register-admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Object> registerAdmin(@RequestBody RegisterAdminDTO dto) {
+        try {
+            // Validate null fields
+            if (dto.login() == null || dto.password() == null || dto.name() == null ||
+                    dto.email() == null) {
+                return ResponseEntity.badRequest().body("All fields are required");
+            }
+
+            // Validate empty fields
+            if (dto.login().isBlank() || dto.password().isBlank() ||
+                    dto.name().isBlank() || dto.email().isBlank()) {
+                return ResponseEntity.badRequest().body("Fields cannot be empty");
+            }
+
+            // Validate email format
+            if (!dto.email().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                return ResponseEntity.badRequest().body("Invalid email format");
+            }
+
+            // Validate password strength (at least 8 characters, 1 number, 1 letter)
+            if (!dto.password().matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$")) {
+                return ResponseEntity.badRequest().body("Password must be at least 8 characters long and contain at least one letter and one number");
+            }
+
+            // Check if user exists
+            if (this.userRepository.findByLogin(dto.login()) != null) {
+                return ResponseEntity.badRequest().body("User already exists");
+            }
+
+            // Check if email is already registered
+            if (this.userRepository.findByEmail(dto.email()) != null) {
+                return ResponseEntity.badRequest().body("Email already registered");
+            }
+
+            // Set role to ADMIN
+            UserRole role = UserRole.ADMIN;
+
+            String encryptedPassword = new BCryptPasswordEncoder().encode(dto.password());
+            User newUser = new User(dto.name(), dto.login(), dto.email(), encryptedPassword, role);
+
+            try {
+                this.userRepository.save(newUser);
+            } catch (DataIntegrityViolationException e) {
+                return ResponseEntity.badRequest().body("Database error: " + e.getMessage());
+            }
+
+            return ResponseEntity.ok().body("Admin registered successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid input: " + e.getMessage());
+        } catch (DataAccessException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body("Database access error: " + e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Server error: " + e.getMessage());
         }
     }
 }

@@ -43,7 +43,7 @@ public class User implements UserDetails {
         this.login = login;
         this.email = email;
         this.password = password;
-        this.role = UserRole.valueOf(String.valueOf(role));
+        this.role = role; // Direct assignment
     }
 
     @Override
@@ -55,11 +55,6 @@ public class User implements UserDetails {
     @Override
     public String getUsername() {
         return login;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return UserDetails.super.isAccountNonExpired();
     }
 
     @Override
