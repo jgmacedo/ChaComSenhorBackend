@@ -1,9 +1,6 @@
 package joao.ChaComOSenhor.domain.user;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,6 +12,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
+@Table(name = "\"user\"")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,18 +22,28 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
+    @Column(nullable = false, unique = true)
     private String login;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false, unique = true)
     private String email;
+
+    @Column(nullable = false)
     private String password;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.ORDINAL)
     private UserRole role;
 
-    public User(String name, String login, String email, String password){
+    public User(String name, String login, String email, String password, UserRole role) {
         this.name = name;
         this.login = login;
         this.email = email;
         this.password = password;
-        this.role = UserRole.USER;
+        this.role = UserRole.valueOf(String.valueOf(role));
     }
 
     @Override

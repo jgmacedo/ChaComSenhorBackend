@@ -21,7 +21,10 @@ public class DevotionalService {
 
     public Devotional createDailyDevotional(BibleVerse bibleVerse) {
         try {
-            checkIfDevotionalExistsForToday();
+            if (checkIfDevotionalExistsForToday()) {
+                logger.info("A devotional for today already exists");
+                return null;
+            }
 
             Devotional content = generateDevotionalContent(bibleVerse);
 
@@ -37,10 +40,11 @@ public class DevotionalService {
         }
     }
 
-    private void checkIfDevotionalExistsForToday() {
+    private Boolean checkIfDevotionalExistsForToday() {
         if (devotionalRepository.findByDate(LocalDate.now()).isPresent()) {
-            throw new RuntimeException("A devotional for today already exists");
+            return true;
         }
+        return false;
     }
 
     private Devotional generateDevotionalContent(BibleVerse bibleVerse) {
