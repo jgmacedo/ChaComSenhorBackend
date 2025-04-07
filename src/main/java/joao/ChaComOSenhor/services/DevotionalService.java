@@ -41,10 +41,7 @@ public class DevotionalService {
     }
 
     private Boolean checkIfDevotionalExistsForToday() {
-        if (devotionalRepository.findByDate(LocalDate.now()).isPresent()) {
-            return true;
-        }
-        return false;
+        return devotionalRepository.findByDate(LocalDate.now()).isPresent();
     }
 
     private Devotional generateDevotionalContent(BibleVerse bibleVerse) {
