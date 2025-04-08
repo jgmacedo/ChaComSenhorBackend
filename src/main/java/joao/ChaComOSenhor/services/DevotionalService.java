@@ -27,9 +27,9 @@ public class DevotionalService {
             }
 
             Devotional content = generateDevotionalContent(bibleVerse);
-
+            System.out.println("Content: " + content);
             Devotional devotional = buildDevotional(content, bibleVerse);
-
+            System.out.println("Devotional: " + devotional);
             devotionalRepository.save(devotional);
             logger.info("Devocional diária criada com sucesso para " + LocalDate.now());
 
