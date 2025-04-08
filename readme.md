@@ -14,8 +14,12 @@ ChaComOSenhor is a Java-based application built with the Spring Boot framework. 
 - **Java**: Core programming language
 - **Spring Boot**: Framework for building the application
 - **Maven**: Dependency and build management
-- **SQL**: Database operations
+- **PostgreSQL**: Database operations
 - **IntelliJ IDEA**: Recommended IDE for development
+
+## Structural Diagram of project
+<img src="diagram.png" alt="Git Diagram explaining how the project is structured"/>
+
 
 ## Prerequisites
 - Java 17 or higher
