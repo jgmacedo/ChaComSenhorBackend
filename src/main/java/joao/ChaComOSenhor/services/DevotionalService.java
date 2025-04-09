@@ -2,9 +2,11 @@ package joao.ChaComOSenhor.services;
 
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 import joao.ChaComOSenhor.domain.devotional.Devotional;
+import joao.ChaComOSenhor.repositories.BibleVerseRepository;
 import joao.ChaComOSenhor.repositories.DevotionalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.logging.Logger;
@@ -12,62 +14,57 @@ import java.util.logging.Logger;
 @Service
 public class DevotionalService {
     private static final Logger logger = Logger.getLogger(DevotionalService.class.getName());
+    private final DevotionalRepository devotionalRepository;
+    private final AiService aiService;
+    private final BibleVerseRepository bibleVerseRepository;
+
 
     @Autowired
-    private DevotionalRepository devotionalRepository;
+    public DevotionalService(DevotionalRepository devotionalRepository,
+                             AiService aiService, BibleVerseRepository bibleVerseRepository, ResponseBuilderService responseBuilderService) {
+        this.devotionalRepository = devotionalRepository;
+        this.aiService = aiService;
+        this.bibleVerseRepository = bibleVerseRepository;
+    }
 
-    @Autowired
-    private AiService aiService;
-
-    public Devotional createDailyDevotional(BibleVerse bibleVerse) {
+    @Transactional
+    public Devotional saveDevotional(Devotional devotional) {
         try {
-            checkIfDevotionalExistsForToday();
-
-            Devotional content = generateDevotionalContent(bibleVerse);
-
-            Devotional devotional = buildDevotional(content, bibleVerse);
-
-            devotionalRepository.save(devotional);
-            logger.info("Devocional diária criada com sucesso para " + LocalDate.now());
-
-            return devotional;
+            return devotionalRepository.save(devotional);
         } catch (Exception e) {
-            logger.severe("Erro ao criar devocional diária: " + e.getMessage());
-            throw new RuntimeException("Failed to create daily devotional: " + e.getMessage(), e);
+            logger.severe("Error saving devotional: " + e.getMessage());
+            throw new RuntimeException("Failed to save devotional", e);
         }
     }
 
-    private void checkIfDevotionalExistsForToday() {
-        if (devotionalRepository.findByDate(LocalDate.now()).isPresent()) {
-            throw new RuntimeException("A devotional for today already exists");
-        }
-    }
-
-    private Devotional generateDevotionalContent(BibleVerse bibleVerse) {
-        String jsonResponse = aiService.sendPostToOpenRouter(bibleVerse);
-        return aiService.parseJsonToDevotional(jsonResponse);
-    }
-
-    private Devotional buildDevotional(Devotional content, BibleVerse bibleVerse) {
-        Devotional devotional = new Devotional();
-        devotional.setTitle(content.getTitle());
-        devotional.setReflection(content.getReflection());
-        devotional.setPrayer(content.getPrayer());
-        devotional.setPracticalApplication(content.getPracticalApplication());
-        devotional.setSupportingVerses(content.getSupportingVerses());
-        devotional.setDate(LocalDate.now());
-        devotional.setBibleVerse(bibleVerse);
-        return devotional;
+    public boolean checkIfDevotionalExistsForToday() {
+        return devotionalRepository.findByDate(LocalDate.now()).isPresent();
     }
 
     public Devotional getTodaysDevotional() {
-        LocalDate today = LocalDate.now();
-        return devotionalRepository.findByDate(today)
-                .orElseThrow(() -> new RuntimeException("Não encontramos a devocional de hoje."));
+        return devotionalRepository.findByDate(LocalDate.now())
+                .orElseThrow(() -> new RuntimeException("Today's devotional not found"));
     }
 
     public Devotional getDevotionalByDate(LocalDate date) {
         return devotionalRepository.findByDate(date)
-                .orElseThrow(() -> new RuntimeException("Não encontramos a devocional do dia " + date.toString()));
+                .orElseThrow(() -> new RuntimeException("Devotional not found for date: " + date));
+    }
+
+    @Transactional
+    public Devotional generateCompleteDevotional(Long verseId) throws Exception {
+        BibleVerse bibleVerse = findBibleVerseOrThrow(verseId);
+        Devotional devotional = aiService.generateDevotional(bibleVerse);
+
+        // Ensure all fields are properly set
+        devotional.setBibleVerse(bibleVerse);
+        devotional.setDate(LocalDate.now());
+
+        return devotional;
+    }
+
+    private BibleVerse findBibleVerseOrThrow(Long id) throws Exception {
+        return bibleVerseRepository.findById(id)
+                .orElseThrow(() -> new Exception("Bible verse not found"));
     }
 }

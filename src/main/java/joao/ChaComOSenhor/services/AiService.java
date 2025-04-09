@@ -2,10 +2,8 @@ package joao.ChaComOSenhor.services;
 
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.net.http.HttpRequest;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.http.HttpResponse;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 import joao.ChaComOSenhor.domain.devotional.Devotional;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,54 +12,77 @@ import org.springframework.stereotype.Service;
 @Service
 public class AiService {
 
-    @Value("${openrouter.api.key}")
-    private String openRouterApiKey;
+    private final ApiResponseParserService apiResponseParserService;
+    private final String openRouterApiKey;
+    private final String openRouterUrl;
 
-    @Value("${openrouter.api.url}")
-    private String openRouterUrl;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    private String generateFullPrompt(BibleVerse bibleVerse){
-        return String.format(
-                """     
-                        ANSWER ONLY THE JSON, NOTHING ELSE. Do not include formatting or explanations. You are a theologian and devotional writer. Given %s and %s, generate: An exact quote of the verse (ESV translation). A title reflecting the verse's theme. A 150-word reflection connecting the verse to daily Christian life. A short prayer based on the verse. A practical application step. Prioritize these 3 concepts: Source Quality: Prioritize well-regarded Christian authors and Scripture (ESV or NIV) to ensure doctrinal soundness 10. Validation: Add a review step (automated) to cross-check outputs against trusted theological resources 10. Ethical Alignment: Avoid controversial interpretations by restricting training data to widely accepted texts Avoid denominational bias and ensure doctrinal alignment with historic Christianity. Structure it exactly like this json template:
-                        {
-                          "exactQuote":
-                          "title":
-                          "reflection":
-                          "prayer":
-                          "practicalApplication":
-                          "supportingVerses":
-                        }
-                        """,
-                bibleVerse.getReference(), bibleVerse.getText()
-        );
+    public AiService(ApiResponseParserService apiResponseParserService,
+                     @Value("${openrouter.api.key}") String openRouterApiKey,
+                     @Value("${openrouter.api.url}") String openRouterUrl) {
+        this.apiResponseParserService = apiResponseParserService;
+        this.openRouterApiKey = openRouterApiKey;
+        this.openRouterUrl = openRouterUrl;
     }
 
-    public String sendPostToOpenRouter(BibleVerse bibleVerse) {
-    try {
-        var client = HttpClient.newHttpClient();
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create(openRouterUrl))
-                .header("Authorization", "Bearer " + this.openRouterApiKey)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(generateFullPrompt(bibleVerse)))
-                .build();
+    public String generateFullPrompt(BibleVerse bibleVerse) {
+        return String.format("""
+                {
+                  "model": "meta-llama/llama-4-scout:free",
+                  "messages": [
+                    {
+                      "content": "you are a devotional creator, graduated from a presbyterian seminary",
+                      "role": "system"
+                    },
+                    {
+                      "content": "Given the following verse:  Reference: %s Text: %s  Generate the following JSON: {   \\"title\\": \\"\\",   \\"reflection\\": \\"\\",   \\"prayer\\": \\"\\",   \\"practicalApplication\\": \\"\\",   \\"supportingVerses\\": \\"\\" }  Guidelines: - Source Quality: Use well-regarded Christian authors and Scripture (ESV or NIV). - Validation: Outputs must align with trusted theological sources. - Ethical Alignment: Avoid controversial or fringe interpretations. Stick to widely accepted Christian theology. - Avoid denominational bias and ensure doctrinal alignment with historic Christianity. - Do not include any content before or after the JSON.",
+                      "role": "user"
+                    }
+                  ],
+                  "response_format": {
+                    "type": "json_object"
+                  }
+                }
+                """, bibleVerse.getReference(), bibleVerse.getText());
+    }
 
-        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+    public Devotional generateDevotional(BibleVerse bibleVerse) {
+        try {
+            validateBibleVerse(bibleVerse);
 
-        return response.body();
+            String jsonPayload = generateFullPrompt(bibleVerse);
+            String apiResponse = sendPostToOpenRouter(jsonPayload);
+
+            return apiResponseParserService.parseDevotionalFromApiResponse(apiResponse);
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao solicitar a devocional: " + e.getMessage(), e);
+            throw new RuntimeException("Error generating devotional: " + e.getMessage(), e);
         }
     }
 
-    public Devotional parseJsonToDevotional(String jsonResponse) {
+    private String sendPostToOpenRouter(String jsonPayload) {
         try {
-            return objectMapper.readValue(jsonResponse, Devotional.class);
+            var client = HttpClient.newHttpClient();
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create(openRouterUrl))
+                    .header("Authorization", "Bearer " + openRouterApiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+                    .build();
+
+            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Failed to get valid response. Status: " + response.statusCode());
+            }
+
+            return response.body();
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao parsear o JSON: " + e.getMessage(), e);
+            throw new RuntimeException("Error while requesting devotional: " + e.getMessage(), e);
+        }
+    }
+
+    private void validateBibleVerse(BibleVerse bibleVerse) {
+        if (bibleVerse == null || bibleVerse.getReference() == null || bibleVerse.getText() == null) {
+            throw new IllegalArgumentException("BibleVerse or its properties are null");
         }
     }
 }

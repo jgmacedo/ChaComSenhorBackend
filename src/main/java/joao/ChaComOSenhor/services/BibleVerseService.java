@@ -13,14 +13,6 @@ public class BibleVerseService {
     @Autowired
     private BibleVerseRepository bibleVerseRepository;
 
-    /**
-     * Save a new Bible verse
-     */
-    public BibleVerse createBibleVerse(BibleVerseCreationDTO dto) {
-       BibleVerse bibleVerse = dto.toBibleVerse();
-       return saveBibleVerse(bibleVerse);
-    }
-
     public BibleVerse saveBibleVerse(BibleVerse bibleVerse) {
         return bibleVerseRepository.save(bibleVerse);
     }

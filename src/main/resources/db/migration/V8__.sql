@@ -1,0 +1,1 @@
+ALTER TABLE devotionals ADD COLUMN supporting_verses TEXT;
