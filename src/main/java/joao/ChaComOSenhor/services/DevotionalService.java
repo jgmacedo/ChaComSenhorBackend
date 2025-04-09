@@ -17,7 +17,6 @@ public class DevotionalService {
     private final DevotionalRepository devotionalRepository;
     private final AiService aiService;
     private final BibleVerseRepository bibleVerseRepository;
-    private final ResponseBuilderService responseBuilderService;
 
 
     @Autowired
@@ -26,26 +25,6 @@ public class DevotionalService {
         this.devotionalRepository = devotionalRepository;
         this.aiService = aiService;
         this.bibleVerseRepository = bibleVerseRepository;
-        this.responseBuilderService = responseBuilderService;
-    }
-
-    @Transactional
-    public Devotional createDailyDevotional(BibleVerse bibleVerse) {
-        try {
-            if (checkIfDevotionalExistsForToday()) {
-                logger.info("A devotional for today already exists");
-                return null;
-            }
-
-            Devotional devotional = aiService.generateDevotional(bibleVerse);
-            devotional.setDate(LocalDate.now());
-            devotional.setBibleVerse(bibleVerse);
-
-            return devotionalRepository.save(devotional);
-        } catch (Exception e) {
-            logger.severe("Error creating daily devotional: " + e.getMessage());
-            throw new RuntimeException("Failed to create daily devotional: " + e.getMessage(), e);
-        }
     }
 
     @Transactional

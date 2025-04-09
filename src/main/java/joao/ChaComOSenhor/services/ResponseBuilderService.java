@@ -1,7 +1,5 @@
 package joao.ChaComOSenhor.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 import joao.ChaComOSenhor.domain.devotional.Devotional;
@@ -10,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -36,10 +33,7 @@ public class ResponseBuilderService {
         response.put("reflection", devotional.getReflection());
         response.put("prayer", devotional.getPrayer());
         response.put("practicalApplication", devotional.getPracticalApplication());
-        response.put("supportingVerses",
-                devotional.getSupportingVerses() != null ?
-                        devotional.getSupportingVerses() : ""
-        );
+        response.put("supportingVerses", devotional.getSupportingVerses());
         response.put("date", devotional.getDate());
         response.put("bibleVerse", buildBibleVerseResponse(bibleVerse));
 
