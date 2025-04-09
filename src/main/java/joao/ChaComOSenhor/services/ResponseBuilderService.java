@@ -54,24 +54,4 @@ public class ResponseBuilderService {
         return response;
     }
 
-    public String formatSupportingVerses(String supportingVerses) {
-        if (supportingVerses == null || supportingVerses.isBlank()) {
-            return "";
-        }
-
-        if (!supportingVerses.startsWith("[")) {
-            return supportingVerses;
-        }
-
-        try {
-            List<String> versesList = objectMapper.readValue(
-                    supportingVerses,
-                    new TypeReference<>() {}
-            );
-            return String.join(", ", versesList);
-        } catch (JsonProcessingException e) {
-            log.warn("Failed to parse supporting verses: {}", supportingVerses, e);
-            return supportingVerses;
-        }
-    }
 }

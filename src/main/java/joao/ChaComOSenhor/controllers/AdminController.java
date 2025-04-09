@@ -1,7 +1,5 @@
 package joao.ChaComOSenhor.controllers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerseCreationDTO;
 import joao.ChaComOSenhor.domain.devotional.ApiResponseDTO;
@@ -19,7 +17,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.Map;
 import java.util.HashMap;
 import joao.ChaComOSenhor.services.AiService;
