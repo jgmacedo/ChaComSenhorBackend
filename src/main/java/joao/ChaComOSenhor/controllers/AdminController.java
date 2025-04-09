@@ -1,18 +1,25 @@
 package joao.ChaComOSenhor.controllers;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerseCreationDTO;
+import joao.ChaComOSenhor.domain.devotional.ApiResponseDTO;
 import joao.ChaComOSenhor.domain.devotional.Devotional;
 import joao.ChaComOSenhor.domain.user.User;
+import joao.ChaComOSenhor.exceptions.ResourceNotFoundException;
 import joao.ChaComOSenhor.repositories.BibleVerseRepository;
 import joao.ChaComOSenhor.repositories.UserRepository;
 import joao.ChaComOSenhor.services.DevotionalService;
+import joao.ChaComOSenhor.services.ResponseBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.HashMap;
 import joao.ChaComOSenhor.services.AiService;
@@ -29,15 +36,17 @@ public class AdminController {
     private final DevotionalService devotionalService;
     private final UserRepository userRepository;
     private final BibleVerseRepository bibleVerseRepository;
+    private final ResponseBuilderService responseBuilderService;
 
     public AdminController(DevotionalService devotionalService,
                            UserRepository userRepository,
                            BibleVerseRepository bibleVerseRepository,
-                           AiService aiService) {
+                           AiService aiService, ResponseBuilderService responseBuilderService) {
         this.devotionalService = devotionalService;
         this.userRepository = userRepository;
         this.bibleVerseRepository = bibleVerseRepository;
         this.aiService = aiService;
+        this.responseBuilderService = responseBuilderService;
     }
 
     @GetMapping("users")
@@ -45,6 +54,7 @@ public class AdminController {
         return userRepository.findAll();
     }
 
+    @Transactional
     @DeleteMapping("users/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userRepository.deleteById(id);
@@ -58,10 +68,22 @@ public class AdminController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+
     @GetMapping("/get_all_bible_verses")
     public ResponseEntity<List<BibleVerse>> getAllBibleVerses() {
         List<BibleVerse> bibleVerses = bibleVerseRepository.findAll();
         return ResponseEntity.ok(bibleVerses);
+    }
+
+    @Transactional
+    @DeleteMapping("/delete_bible_verse/{id}")
+    public ResponseEntity<String> deleteBibleVerseById(@PathVariable Long id) {
+        if (bibleVerseRepository.existsById(id)) {
+            bibleVerseRepository.deleteById(id);
+            return ResponseEntity.ok("Bible verse deleted successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Bible verse not found.");
+        }
     }
 
     @Transactional
@@ -72,57 +94,47 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    @Transactional
     @PostMapping("/create_devotional/{id}")
-    public ResponseEntity<Void> createDevotional(@PathVariable Long id) {
-        try {
-            BibleVerse bibleVerse = bibleVerseRepository.findById(id)
-                    .orElse(null);
-
-            if (bibleVerse == null) {
-                return ResponseEntity.notFound().build();
-            }
-
-            Devotional devotional = devotionalService.createDailyDevotional(bibleVerse);
-            if (devotional == null) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).build();
-            }
-            return ResponseEntity.ok().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-
-    @GetMapping("/test_ai_service/{id}")
-    public ResponseEntity<Map<String, Object>> testAiService(@PathVariable Long id) {
-        Map<String, Object> results = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> createDevotional(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
 
         try {
             BibleVerse bibleVerse = bibleVerseRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Bible verse not found"));
 
-            // Test 1: Get the generated prompt
-            String prompt = aiService.generateFullPrompt(bibleVerse);
-            results.put("generatedPrompt", prompt);
+            Devotional devotional = aiService.generateDevotional(bibleVerse);
+            Devotional savedDevotional = devotionalService.saveDevotional(devotional);
 
-            // Test 2: Get raw API response
-            String rawResponse = aiService.sendPostToOpenRouter(bibleVerse);
-            results.put("rawApiResponse", rawResponse);
+            response.put("success", true);
+            response.put("devotional", savedDevotional);
+            return ResponseEntity.ok(response);
 
-            // Test 3: Try to parse the response
-            try {
-                Devotional devotional = aiService.parseJsonToDevotional(rawResponse);
-                results.put("parsedDevotional", devotional);
-                results.put("parseSuccess", true);
-            } catch (Exception e) {
-                results.put("parseError", e.getMessage());
-                results.put("parseSuccess", false);
-            }
+        } catch (RuntimeException e) {
+            log.error("Error creating devotional: ", e);
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 
-            return ResponseEntity.ok(results);
+    @GetMapping("/test_ai_service/{id}")
+    public ResponseEntity<ApiResponseDTO<?>> testAiService(@PathVariable Long id) {
+        try {
+            Devotional devotional = devotionalService.generateCompleteDevotional(id);
+
+            Map<String, Object> response = responseBuilderService.buildDevotionalResponse(devotional);
+            return ResponseEntity.ok(ApiResponseDTO.success(response));
+
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponseDTO.error("Bible verse not found"));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDTO.error("Incomplete devotional: " + e.getMessage()));
         } catch (Exception e) {
-            results.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(results);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDTO.error("Error generating devotional"));
         }
     }
 }
