@@ -11,6 +11,6 @@ public record DevotionalResponseDTO(
     String reflection,
     String prayer,
     PracticalApplicationDTO practicalApplication,
-    ValidationDTO validation,
+    SourceValidationDTO validation,
     LocalDate date
 ) {}

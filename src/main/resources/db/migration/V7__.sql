@@ -1,0 +1,10 @@
+ALTER TABLE "user"
+    ALTER COLUMN login SET NOT NULL,
+    ALTER COLUMN name SET NOT NULL,
+    ALTER COLUMN email SET NOT NULL,
+    ALTER COLUMN password SET NOT NULL,
+    ALTER COLUMN role SET NOT NULL;
+
+ALTER TABLE "user"
+    ADD CONSTRAINT uk_user_login UNIQUE (login),
+    ADD CONSTRAINT uk_user_email UNIQUE (email);
