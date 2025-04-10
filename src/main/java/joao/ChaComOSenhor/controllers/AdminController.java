@@ -11,7 +11,6 @@ import joao.ChaComOSenhor.repositories.BibleVerseRepository;
 import joao.ChaComOSenhor.repositories.DevotionalRepository;
 import joao.ChaComOSenhor.repositories.UserRepository;
 import joao.ChaComOSenhor.services.DevotionalService;
-import joao.ChaComOSenhor.services.ResponseBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +35,7 @@ public class AdminController {
     public AdminController(DevotionalService devotionalService,
                            UserRepository userRepository,
                            BibleVerseRepository bibleVerseRepository,
-                           ResponseBuilderService responseBuilderService, DevotionalRepository devotionalRepository) {
+                           DevotionalRepository devotionalRepository) {
         this.devotionalService = devotionalService;
         this.userRepository = userRepository;
         this.bibleVerseRepository = bibleVerseRepository;

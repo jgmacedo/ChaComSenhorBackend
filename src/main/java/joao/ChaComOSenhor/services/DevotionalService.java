@@ -22,7 +22,7 @@ public class DevotionalService {
 
     @Autowired
     public DevotionalService(DevotionalRepository devotionalRepository,
-                             AiService aiService, BibleVerseRepository bibleVerseRepository, ResponseBuilderService responseBuilderService) {
+                             AiService aiService, BibleVerseRepository bibleVerseRepository) {
         this.devotionalRepository = devotionalRepository;
         this.aiService = aiService;
         this.bibleVerseRepository = bibleVerseRepository;
