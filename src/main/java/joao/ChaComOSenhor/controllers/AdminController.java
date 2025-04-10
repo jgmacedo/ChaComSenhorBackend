@@ -1,5 +1,6 @@
 package joao.ChaComOSenhor.controllers;
 
+import jakarta.persistence.EntityNotFoundException;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerseCreationDTO;
 import joao.ChaComOSenhor.domain.devotional.ApiResponseDTO;
@@ -7,6 +8,7 @@ import joao.ChaComOSenhor.domain.devotional.Devotional;
 import joao.ChaComOSenhor.domain.user.User;
 import joao.ChaComOSenhor.exceptions.ResourceNotFoundException;
 import joao.ChaComOSenhor.repositories.BibleVerseRepository;
+import joao.ChaComOSenhor.repositories.DevotionalRepository;
 import joao.ChaComOSenhor.repositories.UserRepository;
 import joao.ChaComOSenhor.services.DevotionalService;
 import joao.ChaComOSenhor.services.ResponseBuilderService;
@@ -18,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.HashMap;
 import joao.ChaComOSenhor.services.AiService;
 
 import java.util.List;
@@ -34,16 +35,18 @@ public class AdminController {
     private final UserRepository userRepository;
     private final BibleVerseRepository bibleVerseRepository;
     private final ResponseBuilderService responseBuilderService;
+    private final DevotionalRepository devotionalRepository;
 
     public AdminController(DevotionalService devotionalService,
                            UserRepository userRepository,
                            BibleVerseRepository bibleVerseRepository,
-                           AiService aiService, ResponseBuilderService responseBuilderService) {
+                           AiService aiService, ResponseBuilderService responseBuilderService, DevotionalRepository devotionalRepository) {
         this.devotionalService = devotionalService;
         this.userRepository = userRepository;
         this.bibleVerseRepository = bibleVerseRepository;
         this.aiService = aiService;
         this.responseBuilderService = responseBuilderService;
+        this.devotionalRepository = devotionalRepository;
     }
 
     @GetMapping("users")
@@ -92,35 +95,15 @@ public class AdminController {
     }
 
     @Transactional
-    @PostMapping("/create_devotional/{id}")
-    public ResponseEntity<Map<String, Object>> createDevotional(@PathVariable Long id) {
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            BibleVerse bibleVerse = bibleVerseRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Bible verse not found"));
-
-            Devotional devotional = aiService.generateDevotional(bibleVerse);
-            Devotional savedDevotional = devotionalService.saveDevotional(devotional);
-
-            response.put("success", true);
-            response.put("devotional", savedDevotional);
-            return ResponseEntity.ok(response);
-
-        } catch (RuntimeException e) {
-            log.error("Error creating devotional: ", e);
-            response.put("success", false);
-            response.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-        }
-    }
-
-    @GetMapping("/test_ai_service/{id}")
+    @GetMapping("/create_daily_devotional/{id}")
     public ResponseEntity<ApiResponseDTO<?>> testAiService(@PathVariable Long id) {
         try {
+            // Generate the devotional
             Devotional devotional = devotionalService.generateCompleteDevotional(id);
 
+            // Build the response
             Map<String, Object> response = responseBuilderService.buildDevotionalResponse(devotional);
+            devotionalService.saveDevotional(devotional);
             return ResponseEntity.ok(ApiResponseDTO.success(response));
 
         } catch (ResourceNotFoundException e) {
@@ -132,6 +115,20 @@ public class AdminController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponseDTO.error("Error generating devotional"));
+        }
+    }
+
+    @Transactional
+    @DeleteMapping("/delete_devotional/{id}")
+    ResponseEntity<String> deleteDevotional(@PathVariable Long id) {
+        try {
+            if (!devotionalRepository.existsById(id)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Devotional not found");
+            }
+            devotionalRepository.deleteById(id);
+            return ResponseEntity.ok("Devotional deleted successfully.");
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Devotional not found");
         }
     }
 }

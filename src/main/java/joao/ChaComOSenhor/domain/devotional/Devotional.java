@@ -30,7 +30,8 @@ public class Devotional {
     @Column(length = 1000)
     private String practicalApplication;
 
-    @Column(length = 1000)
+    @Lob
+    @Column(name = "supporting_verses", columnDefinition = "TEXT")
     private String supportingVerses;
 
     private LocalDate date;
