@@ -19,7 +19,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import joao.ChaComOSenhor.services.AiService;
 
 import java.util.List;
 
@@ -32,17 +31,15 @@ public class AdminController {
     private final DevotionalService devotionalService;
     private final UserRepository userRepository;
     private final BibleVerseRepository bibleVerseRepository;
-    private final ResponseBuilderService responseBuilderService;
     private final DevotionalRepository devotionalRepository;
 
     public AdminController(DevotionalService devotionalService,
                            UserRepository userRepository,
                            BibleVerseRepository bibleVerseRepository,
-                           AiService aiService, ResponseBuilderService responseBuilderService, DevotionalRepository devotionalRepository) {
+                           ResponseBuilderService responseBuilderService, DevotionalRepository devotionalRepository) {
         this.devotionalService = devotionalService;
         this.userRepository = userRepository;
         this.bibleVerseRepository = bibleVerseRepository;
-        this.responseBuilderService = responseBuilderService;
         this.devotionalRepository = devotionalRepository;
     }
 
