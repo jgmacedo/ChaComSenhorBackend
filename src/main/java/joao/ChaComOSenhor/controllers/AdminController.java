@@ -123,13 +123,13 @@ public class AdminController {
         }
     }
 
-    @Transactional
-    @GetMapping("/create_daily_devotional/{id}")
+    @PostMapping("/create_daily_devotional/{id}")
     public ResponseEntity<ApiResponseDTO<DevotionalCreatorDTO>> createDailyDevotional(@PathVariable Long id) {
         try {
             Devotional devotional = devotionalService.generateCompleteDevotional(id);
             devotionalService.saveDevotional(devotional);
-            return ResponseEntity.ok(ApiResponseDTO.success(DevotionalCreatorDTO.fromDevotional(devotional)));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponseDTO.success(DevotionalCreatorDTO.fromDevotional(devotional)));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponseDTO.error("Bible verse not found"));
