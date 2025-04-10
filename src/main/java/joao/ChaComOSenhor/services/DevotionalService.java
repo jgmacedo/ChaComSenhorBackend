@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.logging.Logger;
 
 @Service
@@ -37,8 +38,8 @@ public class DevotionalService {
         }
     }
 
-    public boolean checkIfDevotionalExistsForToday() {
-        return devotionalRepository.findByDate(LocalDate.now()).isPresent();
+    public boolean checkIfDevotionalExistsForDate(LocalDate date) {
+        return devotionalRepository.findByDate(date).isPresent();
     }
 
     public Devotional getTodaysDevotional() {
@@ -66,5 +67,13 @@ public class DevotionalService {
     private BibleVerse findBibleVerseOrThrow(Long id) throws Exception {
         return bibleVerseRepository.findById(id)
                 .orElseThrow(() -> new Exception("Bible verse not found"));
+    }
+
+    public List<LocalDate> getAllDevotionalDates() {
+        List<LocalDate> dates = devotionalRepository.findAllDates();
+        if (dates.isEmpty()) {
+            throw new RuntimeException("No devotional dates found");
+        }
+        return dates;
     }
 }
