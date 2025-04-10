@@ -1,10 +1,10 @@
 package joao.ChaComOSenhor.controllers;
 
-import jakarta.persistence.EntityNotFoundException;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerseCreationDTO;
 import joao.ChaComOSenhor.domain.devotional.ApiResponseDTO;
 import joao.ChaComOSenhor.domain.devotional.Devotional;
+import joao.ChaComOSenhor.domain.devotional.DevotionalCreatorDTO;
 import joao.ChaComOSenhor.domain.user.User;
 import joao.ChaComOSenhor.exceptions.ResourceNotFoundException;
 import joao.ChaComOSenhor.repositories.BibleVerseRepository;
@@ -49,63 +49,90 @@ public class AdminController {
         this.devotionalRepository = devotionalRepository;
     }
 
-    @GetMapping("users")
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    @GetMapping("/users")
+    public ResponseEntity<ApiResponseDTO<List<User>>> getAllUsers() {
+        try {
+            List<User> users = userRepository.findAll();
+            return ResponseEntity.ok(ApiResponseDTO.success(users));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDTO.error(e.getMessage()));
+        }
     }
 
     @Transactional
-    @DeleteMapping("users/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<ApiResponseDTO<Void>> deleteUser(@PathVariable Long id) {
+        try {
+            userRepository.deleteById(id);
+            return ResponseEntity.ok(ApiResponseDTO.success(null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDTO.error(e.getMessage()));
+        }
     }
 
     @GetMapping("/get_bible_verse_by_id/{id}")
-    public ResponseEntity<BibleVerse> getBibleVerseById(@PathVariable Long id) {
-        return bibleVerseRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ApiResponseDTO<BibleVerse>> getBibleVerseById(@PathVariable Long id) {
+        try {
+            return bibleVerseRepository.findById(id)
+                    .map(verse -> ResponseEntity.ok(ApiResponseDTO.success(verse)))
+                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(ApiResponseDTO.error("Bible verse not found")));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDTO.error(e.getMessage()));
+        }
     }
 
 
     @GetMapping("/get_all_bible_verses")
-    public ResponseEntity<List<BibleVerse>> getAllBibleVerses() {
-        List<BibleVerse> bibleVerses = bibleVerseRepository.findAll();
-        return ResponseEntity.ok(bibleVerses);
+    public ResponseEntity<ApiResponseDTO<List<BibleVerse>>> getAllBibleVerses() {
+        try {
+            List<BibleVerse> bibleVerses = bibleVerseRepository.findAll();
+            return ResponseEntity.ok(ApiResponseDTO.success(bibleVerses));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDTO.error(e.getMessage()));
+        }
     }
 
     @Transactional
     @DeleteMapping("/delete_bible_verse/{id}")
-    public ResponseEntity<String> deleteBibleVerseById(@PathVariable Long id) {
-        if (bibleVerseRepository.existsById(id)) {
+    public ResponseEntity<ApiResponseDTO<Void>> deleteBibleVerseById(@PathVariable Long id) {
+        try {
+            if (!bibleVerseRepository.existsById(id)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponseDTO.error("Bible verse not found"));
+            }
             bibleVerseRepository.deleteById(id);
-            return ResponseEntity.ok("Bible verse deleted successfully.");
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Bible verse not found.");
+            return ResponseEntity.ok(ApiResponseDTO.success(null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDTO.error(e.getMessage()));
         }
     }
 
     @Transactional
     @PostMapping("/create_bible_verse")
-    public ResponseEntity<BibleVerse> createBibleVerse(@RequestBody BibleVerseCreationDTO dto) {
-        BibleVerse bibleVerse = dto.toBibleVerse();
-        bibleVerseRepository.save(bibleVerse);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ApiResponseDTO<BibleVerse>> createBibleVerse(@RequestBody BibleVerseCreationDTO dto) {
+        try {
+            BibleVerse bibleVerse = dto.toBibleVerse();
+            bibleVerseRepository.save(bibleVerse);
+            return ResponseEntity.ok(ApiResponseDTO.success(bibleVerse));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDTO.error(e.getMessage()));
+        }
     }
 
     @Transactional
     @GetMapping("/create_daily_devotional/{id}")
-    public ResponseEntity<ApiResponseDTO<?>> testAiService(@PathVariable Long id) {
+    public ResponseEntity<ApiResponseDTO<DevotionalCreatorDTO>> createDailyDevotional(@PathVariable Long id) {
         try {
-            // Generate the devotional
             Devotional devotional = devotionalService.generateCompleteDevotional(id);
-
-            // Build the response
-            Map<String, Object> response = responseBuilderService.buildDevotionalResponse(devotional);
             devotionalService.saveDevotional(devotional);
-            return ResponseEntity.ok(ApiResponseDTO.success(response));
-
+            return ResponseEntity.ok(ApiResponseDTO.success(DevotionalCreatorDTO.fromDevotional(devotional)));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponseDTO.error("Bible verse not found"));
@@ -120,15 +147,17 @@ public class AdminController {
 
     @Transactional
     @DeleteMapping("/delete_devotional/{id}")
-    ResponseEntity<String> deleteDevotional(@PathVariable Long id) {
+    public ResponseEntity<ApiResponseDTO<Void>> deleteDevotional(@PathVariable Long id) {
         try {
             if (!devotionalRepository.existsById(id)) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Devotional not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponseDTO.error("Devotional not found"));
             }
             devotionalRepository.deleteById(id);
-            return ResponseEntity.ok("Devotional deleted successfully.");
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Devotional not found");
+            return ResponseEntity.ok(ApiResponseDTO.success(null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDTO.error(e.getMessage()));
         }
     }
 }
