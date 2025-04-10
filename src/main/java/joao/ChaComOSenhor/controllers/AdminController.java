@@ -19,7 +19,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import joao.ChaComOSenhor.services.AiService;
 
 import java.util.List;
@@ -29,7 +28,6 @@ import java.util.List;
 @RequestMapping("/admin")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
-    private final AiService aiService;
 
     private final DevotionalService devotionalService;
     private final UserRepository userRepository;
@@ -44,7 +42,6 @@ public class AdminController {
         this.devotionalService = devotionalService;
         this.userRepository = userRepository;
         this.bibleVerseRepository = bibleVerseRepository;
-        this.aiService = aiService;
         this.responseBuilderService = responseBuilderService;
         this.devotionalRepository = devotionalRepository;
     }

@@ -1,7 +1,6 @@
 package joao.ChaComOSenhor.domain.devotional;
 
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
-import joao.ChaComOSenhor.domain.bible_verse.ExactQuoteDTO;
 
 import java.time.LocalDate;
 
