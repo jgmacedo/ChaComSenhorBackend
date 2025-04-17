@@ -167,25 +167,4 @@ public class AuthenticationController {
         }
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<Object> me(@AuthenticationPrincipal User user) {
-        try {
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body("User not authenticated");
-            }
-
-            UserResponseDTO userResponse = new UserResponseDTO(
-                    user.getName(),
-                    user.getLogin(),
-                    user.getEmail(),
-                    user.getRole().toString()
-            );
-
-            return ResponseEntity.ok(userResponse);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error retrieving user data: " + e.getMessage());
-        }
-    }
 }
