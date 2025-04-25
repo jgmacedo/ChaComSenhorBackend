@@ -18,7 +18,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-
 import java.util.List;
 
 @Slf4j
@@ -78,12 +77,24 @@ public class AdminController {
         }
     }
 
-
+    @Transactional(readOnly = true)
     @GetMapping("/get_all_bible_verses")
     public ResponseEntity<ApiResponseDTO<List<BibleVerse>>> getAllBibleVerses() {
         try {
             List<BibleVerse> bibleVerses = bibleVerseRepository.findAll();
             return ResponseEntity.ok(ApiResponseDTO.success(bibleVerses));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponseDTO.error(e.getMessage()));
+        }
+    }
+
+    @Transactional(readOnly = true)
+    @GetMapping("/get_all_devotionals")
+    public ResponseEntity<ApiResponseDTO<List<Devotional>>> getAllDevotionals() {
+        try {
+            List<Devotional> devotionals = devotionalRepository.findAll();
+            return ResponseEntity.ok(ApiResponseDTO.success(devotionals));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponseDTO.error(e.getMessage()));
@@ -119,6 +130,7 @@ public class AdminController {
         }
     }
 
+    @Transactional
     @PostMapping("/create_daily_devotional/{id}")
     public ResponseEntity<ApiResponseDTO<DevotionalCreatorDTO>> createDailyDevotional(@PathVariable Long id) {
         try {

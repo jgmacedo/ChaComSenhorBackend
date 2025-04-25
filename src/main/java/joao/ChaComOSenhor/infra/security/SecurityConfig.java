@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register-admin").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/devotionals/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
                 )
@@ -105,10 +106,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowCredentials(true);
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowCredentials(false); // Change to false
+        configuration.setAllowedOrigins(List.of("*")); // Use setAllowedOrigins instead of patterns
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowedMethods(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

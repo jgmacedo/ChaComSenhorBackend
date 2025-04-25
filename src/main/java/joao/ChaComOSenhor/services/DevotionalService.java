@@ -38,6 +38,7 @@ public class DevotionalService {
         }
     }
 
+    @Transactional(readOnly = true)
     public boolean checkIfDevotionalExistsForDate(LocalDate date) {
         return devotionalRepository.findByDate(date).isPresent();
     }
@@ -47,6 +48,7 @@ public class DevotionalService {
                 .orElseThrow(() -> new RuntimeException("Today's devotional not found"));
     }
 
+    @Transactional(readOnly = true)
     public Devotional getDevotionalByDate(LocalDate date) {
         return devotionalRepository.findByDate(date)
                 .orElseThrow(() -> new RuntimeException("Devotional not found for date: " + date));

@@ -22,6 +22,9 @@ import java.util.List;
 @PreAuthorize("hasRole('USER')")
 public class DevotionalController {
     DevotionalService devotionalService;
+    public DevotionalController(DevotionalService devotionalService) {
+        this.devotionalService = devotionalService;
+    }
 
     @GetMapping("/today")
     public ResponseEntity<ApiResponseDTO<DevotionalResponseDTO>> getTodaysDevotional() {

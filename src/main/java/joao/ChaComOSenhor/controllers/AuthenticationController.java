@@ -1,26 +1,25 @@
 package joao.ChaComOSenhor.controllers;
 
 import joao.ChaComOSenhor.domain.user.*;
-import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import joao.ChaComOSenhor.infra.security.TokenService;
 import joao.ChaComOSenhor.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.*;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "*")
 public class AuthenticationController {
 
     @Autowired
@@ -96,13 +95,21 @@ public class AuthenticationController {
         try {
             var usernamePassword = new UsernamePasswordAuthenticationToken(dto.login(), dto.password());
             var auth = this.authenticationManager.authenticate(usernamePassword);
-            var token = tokenService.generateToken((User) auth.getPrincipal());
-            return ResponseEntity.ok(new LoginResponseDTO(token));
-        }catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            String stackTrace = sw.toString();
-            System.err.println("Full stack trace: " + stackTrace);
+            var user = (User) auth.getPrincipal(); // Get the authenticated user
+            var token = tokenService.generateToken(user);
+
+            // Create the response with token and user details
+            var response = new LoginResponseDTO(
+                    token,
+                    user.getUsername(), // Username
+                    user.getAuthorities().stream()
+                            .map(GrantedAuthority::getAuthority)
+                            .toList() // Roles
+            );
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }

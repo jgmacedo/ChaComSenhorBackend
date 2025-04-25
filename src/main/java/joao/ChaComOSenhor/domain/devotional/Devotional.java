@@ -21,13 +21,13 @@ public class Devotional {
 
     private String title;
 
-    @Column(length = 3000)
+    @Column(length = 3000 ,columnDefinition = "TEXT")
     private String reflection;
 
-    @Column(length = 500)
+    @Column(length = 500 , columnDefinition = "TEXT")
     private String prayer;
 
-    @Column(length = 1000)
+    @Column(length = 1000 , columnDefinition = "TEXT")
     private String practicalApplication;
 
     @Lob

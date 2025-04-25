@@ -34,6 +34,7 @@ public class TokenService {
             return JWT.create()
                     .withIssuer("ChaComOSenhor")
                     .withSubject(user.getLogin())
+                    .withClaim("role", user.getRole().toString())
                     .withExpiresAt(genExpirationDate())
                     .sign(algorithm);
         } catch (JWTCreationException e) {
