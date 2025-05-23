@@ -37,13 +37,13 @@ public class AuthenticationController {
             // Validate null fields
             if (dto.login() == null || dto.password() == null || dto.name() == null ||
                     dto.email() == null) {
-                return ResponseEntity.badRequest().body("All fields are required");
+                return ResponseEntity.badRequest().body("Preencha todos os campos");
             }
 
             // Validate empty fields
             if (dto.login().isBlank() || dto.password().isBlank() ||
                     dto.name().isBlank() || dto.email().isBlank()) {
-                return ResponseEntity.badRequest().body("Fields cannot be empty");
+                return ResponseEntity.badRequest().body("Preencha todos os campos");
             }
 
             // Validate email format
@@ -53,17 +53,17 @@ public class AuthenticationController {
 
             // Validate password strength (at least 8 characters, 1 number, 1 letter)
             if (!dto.password().matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$")) {
-                return ResponseEntity.badRequest().body("Password must be at least 8 characters long and contain at least one letter and one number");
+                return ResponseEntity.badRequest().body("A senha deve ter pelo menos 8 caracteres e conter pelo menos uma letra e um número");
             }
 
             // Check if user exists
             if (this.userRepository.findByLogin(dto.login()) != null) {
-                return ResponseEntity.badRequest().body("User already exists");
+                return ResponseEntity.badRequest().body("Usuário já existe");
             }
 
             // Check if email is already registered
             if (this.userRepository.findByEmail(dto.email()) != null) {
-                return ResponseEntity.badRequest().body("Email already registered");
+                return ResponseEntity.badRequest().body("Email já está em uso");
             }
 
             // Set role to USER
