@@ -12,12 +12,14 @@ import joao.ChaComOSenhor.repositories.DevotionalRepository;
 import joao.ChaComOSenhor.repositories.UserRepository;
 import joao.ChaComOSenhor.services.DevotionalService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -131,20 +133,24 @@ public class AdminController {
     }
 
     @Transactional
-    @PostMapping("/create_daily_devotional/{id}")
-    public ResponseEntity<ApiResponseDTO<DevotionalCreatorDTO>> createDailyDevotional(@PathVariable Long id) {
+    @PostMapping("/create_devotional")
+    public ResponseEntity<ApiResponseDTO<DevotionalCreatorDTO>> createDevotional(
+            @RequestHeader("verse-id") Long verseId,
+            @RequestHeader("devotional-date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         try {
-            Devotional devotional = devotionalService.generateCompleteDevotional(id);
-            devotionalService.saveDevotional(devotional);
+            Devotional devotional = devotionalService.generateCompleteDevotional(verseId, date);
+            Devotional savedDevotional = devotionalService.saveDevotional(devotional);
+
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponseDTO.success(DevotionalCreatorDTO.fromDevotional(devotional)));
+                    .body(ApiResponseDTO.success(DevotionalCreatorDTO.fromDevotional(savedDevotional)));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponseDTO.error(e.getMessage()));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponseDTO.error("Bible verse not found"));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponseDTO.error("Incomplete devotional: " + e.getMessage()));
         } catch (Exception e) {
+            log.error("Error creating devotional", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponseDTO.error("Error generating devotional"));
         }

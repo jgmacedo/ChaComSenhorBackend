@@ -1,0 +1,1 @@
+ALTER TABLE devotionals ALTER COLUMN supporting_verses TYPE VARCHAR(1000);

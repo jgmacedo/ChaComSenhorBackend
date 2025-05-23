@@ -1,11 +1,13 @@
 package joao.ChaComOSenhor.domain.bible_verse;
 
-    import jakarta.persistence.*;
-    import lombok.AllArgsConstructor;
-    import lombok.Data;
-    import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-    @Data
+import java.time.LocalDateTime;
+
+@Data
     @Table(name = "bible_verses")
     @AllArgsConstructor
     @NoArgsConstructor
@@ -22,6 +24,8 @@ package joao.ChaComOSenhor.domain.bible_verse;
         @Column(length = 100)
         private String reference;
 
+        @Column
+        private LocalDateTime creationDate;
         // This constructor can be used for testing
         public BibleVerse(String reference, String text) {
             this.reference = reference;

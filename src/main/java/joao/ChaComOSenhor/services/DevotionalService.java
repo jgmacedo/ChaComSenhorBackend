@@ -2,6 +2,7 @@ package joao.ChaComOSenhor.services;
 
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 import joao.ChaComOSenhor.domain.devotional.Devotional;
+import joao.ChaComOSenhor.exceptions.ResourceNotFoundException;
 import joao.ChaComOSenhor.repositories.BibleVerseRepository;
 import joao.ChaComOSenhor.repositories.DevotionalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,20 +56,22 @@ public class DevotionalService {
     }
 
     @Transactional
-    public Devotional generateCompleteDevotional(Long verseId) throws Exception {
-        BibleVerse bibleVerse = findBibleVerseOrThrow(verseId);
-        Devotional devotional = aiService.generateDevotional(bibleVerse);
+    public Devotional generateCompleteDevotional(Long verseId, LocalDate date) {
+        BibleVerse bibleVerse = bibleVerseRepository.findById(verseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bible verse not found with id: " + verseId));
 
-        // Ensure all fields are properly set
-        devotional.setBibleVerse(bibleVerse);
-        devotional.setDate(LocalDate.now());
+        if (checkIfDevotionalExistsForDate(date)) {
+            throw new IllegalStateException("A devotional already exists for date: " + date);
+        }
 
-        return devotional;
-    }
-
-    private BibleVerse findBibleVerseOrThrow(Long id) throws Exception {
-        return bibleVerseRepository.findById(id)
-                .orElseThrow(() -> new Exception("Bible verse not found"));
+        try {
+            Devotional devotional = aiService.generateDevotional(bibleVerse);
+            devotional.setBibleVerse(bibleVerse);
+            devotional.setDate(date);
+            return devotional;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate devotional: " + e.getMessage(), e);
+        }
     }
 
     public List<LocalDate> getAllDevotionalDates() {
