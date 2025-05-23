@@ -42,7 +42,7 @@ public class ApiResponseParserService {
             } else if (supportingVersesNode.isArray()) {
                 StringBuilder verses = new StringBuilder();
                 for (JsonNode verse : supportingVersesNode) {
-                    if (verses.length() > 0) {
+                    if (!verses.isEmpty()) {
                         verses.append(", ");
                     }
                     verses.append(verse.asText());
