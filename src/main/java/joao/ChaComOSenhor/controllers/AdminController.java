@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 
 @Slf4j
@@ -84,6 +85,8 @@ public class AdminController {
     public ResponseEntity<ApiResponseDTO<List<BibleVerse>>> getAllBibleVerses() {
         try {
             List<BibleVerse> bibleVerses = bibleVerseRepository.findAll();
+            bibleVerses.sort(Comparator.comparing(BibleVerse::getCreationDate,
+                    Comparator.nullsLast(Comparator.reverseOrder())));
             return ResponseEntity.ok(ApiResponseDTO.success(bibleVerses));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

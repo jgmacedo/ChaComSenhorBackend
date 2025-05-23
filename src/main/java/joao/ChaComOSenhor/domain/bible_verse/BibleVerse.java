@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 
         @Column
         private LocalDateTime creationDate;
+
         // This constructor can be used for testing
         public BibleVerse(String reference, String text) {
             this.reference = reference;

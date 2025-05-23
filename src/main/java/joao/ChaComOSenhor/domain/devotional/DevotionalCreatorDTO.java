@@ -3,8 +3,6 @@ package joao.ChaComOSenhor.domain.devotional;
 import joao.ChaComOSenhor.domain.bible_verse.BibleVerse;
 
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
 
 public record DevotionalCreatorDTO(
         Long id,
@@ -12,7 +10,7 @@ public record DevotionalCreatorDTO(
         String reflection,
         String prayer,
         String practicalApplication,
-        List<String> supportingVerses,
+        String supportingVerses,
         LocalDate date,
         BibleVerse bibleVerse
 ) {
@@ -23,7 +21,7 @@ public record DevotionalCreatorDTO(
                 devotional.getReflection(),
                 devotional.getPrayer(),
                 devotional.getPracticalApplication(),
-                Collections.singletonList(devotional.getSupportingVerses()),
+                devotional.getSupportingVerses(),  // Direct string assignment
                 devotional.getDate(),
                 devotional.getBibleVerse()
         );

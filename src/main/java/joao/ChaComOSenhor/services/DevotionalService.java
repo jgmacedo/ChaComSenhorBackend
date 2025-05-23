@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -76,6 +77,7 @@ public class DevotionalService {
 
     public List<LocalDate> getAllDevotionalDates() {
         List<LocalDate> dates = devotionalRepository.findAllDates();
+        dates.sort(Comparator.reverseOrder());
         if (dates.isEmpty()) {
             throw new RuntimeException("No devotional dates found");
         }
