@@ -21,7 +21,7 @@ public record DevotionalCreatorDTO(
                 devotional.getReflection(),
                 devotional.getPrayer(),
                 devotional.getPracticalApplication(),
-                devotional.getSupportingVerses(),  // Direct string assignment
+                devotional.getSupportingVerses(),
                 devotional.getDate(),
                 devotional.getBibleVerse()
         );
