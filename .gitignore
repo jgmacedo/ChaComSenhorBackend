@@ -59,4 +59,5 @@ application.yml
 
 ### Environment variables ###
 HTTP Test
+.env
 
