@@ -54,7 +54,7 @@ Thumbs.db
 *~
 
 ### Application properties ###
-application.properties
+# application.properties
 application.yml
 
 ### Environment variables ###
