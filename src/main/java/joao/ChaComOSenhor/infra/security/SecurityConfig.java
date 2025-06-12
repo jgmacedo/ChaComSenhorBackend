@@ -107,7 +107,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true); // Allow credentials
-        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // Use localhost for now
+        configuration.setAllowedOrigins(List.of("https://cha-com-senhor-frontend-193-3o91odzgu.vercel.app"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
