@@ -114,14 +114,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowCredentials(true); // Allow credentials
-        configuration.setAllowedOrigins(List.of("https://chacomosenhor.vercel.app"));
+        configuration.setAllowCredentials(true); // Permitir envio de cookies/autorização
+        configuration.setAllowedOriginPatterns(List.of(
+                "https://*.vercel.app",         // Todos subdomínios Vercel
+                "https://*.chacomosenhor.com"   // Seu domínio customizado (se tiver)
+        ));
         configuration.setAllowedHeaders(List.of(
                 "Authorization", "Content-Type", "verse-id", "devotional-date"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
 }
