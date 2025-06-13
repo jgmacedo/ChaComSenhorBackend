@@ -11,6 +11,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 public class AiService {
@@ -19,6 +22,7 @@ public class AiService {
     private final String openRouterApiKey;
     private final String openRouterUrl;
     private static final Logger log = LoggerFactory.getLogger(AiService.class);
+    private final ExecutorService executor = Executors.newCachedThreadPool();
 
     public AiService(ApiResponseParserService apiResponseParserService,
                      @Value("${openrouter.api.key}") String openRouterApiKey,
@@ -28,10 +32,10 @@ public class AiService {
         this.openRouterUrl = openRouterUrl;
     }
 
-    public String generateFullPrompt(BibleVerse bibleVerse) {
-        return String.format("""
+    public CompletableFuture<String> generateFullPrompt(BibleVerse bibleVerse) {
+        return CompletableFuture.supplyAsync(() -> String.format("""
                 {
-                  "model": "deepseek/deepseek-r1-0528:free",
+                  "model": "google/gemma-3n-e4b-it:free",
                   "messages": [
                     {
                       "content": "Você é um autor devocional, formado em um seminário presbiteriano, escrevendo no estilo de grandes teólogos e pregadores históricos como Jonathan Edwards, John Owen, Charles Spurgeon, C.S. Lewis, João Calvino ou John Knox. Sua missão é produzir reflexões profundas, centradas em Jesus Cristo, mostrando como cada texto bíblico aponta para Ele, mesmo que de forma sutil. O foco deve ser a aplicação prática e diária da verdade do Evangelho na vida do leitor, levando-o a contemplar Cristo, confiar em Sua obra e viver em obediência a Ele. Use uma linguagem rica, reverente, teologicamente sólida e pastoral, evitando interpretações controversas ou sectárias. Todas as respostas devem ser baseadas nas Escrituras e alinhadas com a fé cristã histórica. RESPONDA APENAS O JSON.",
@@ -46,48 +50,45 @@ public class AiService {
                     "temperature": 0.6
                   }
                 }
-                """, bibleVerse.getReference(), bibleVerse.getText());
+                """, bibleVerse.getReference(), bibleVerse.getText()), executor);
     }
 
-    public Devotional generateDevotional(BibleVerse bibleVerse) {
-        try {
-            validateBibleVerse(bibleVerse);
-
-            String jsonPayload = generateFullPrompt(bibleVerse);
-            String apiResponse = sendPostToOpenRouter(jsonPayload);
-
-            return apiResponseParserService.parseDevotionalFromApiResponse(apiResponse);
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating devotional: " + e.getMessage(), e);
-        }
+    public CompletableFuture<Devotional> generateDevotional(BibleVerse bibleVerse) {
+        return CompletableFuture.runAsync(() -> validateBibleVerse(bibleVerse), executor)
+                .thenCompose(v -> generateFullPrompt(bibleVerse))
+                .thenCompose(jsonPayload -> sendPostToOpenRouter(jsonPayload))
+                .thenApply(apiResponse -> apiResponseParserService.parseDevotionalFromApiResponse(apiResponse))
+                .exceptionally(e -> { throw new RuntimeException("Error generating devotional: " + e.getMessage(), e); });
     }
 
-    private String sendPostToOpenRouter(String jsonPayload) {
-        try {
-            var client = HttpClient.newHttpClient();
-            var request = HttpRequest.newBuilder()
-                    .uri(URI.create(openRouterUrl))
-                    .header("Authorization", "Bearer " + openRouterApiKey)
-                    .header("Content-Type", "application/json")
-                    .header("HTTP-Referer", "https://localhost") // Required by some AI APIs
-                    .header("X-Title", "Devotional Generator") // Helps identify the application
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
-                    .build();
+    private CompletableFuture<String> sendPostToOpenRouter(String jsonPayload) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                var client = HttpClient.newHttpClient();
+                var request = HttpRequest.newBuilder()
+                        .uri(URI.create(openRouterUrl))
+                        .header("Authorization", "Bearer " + openRouterApiKey)
+                        .header("Content-Type", "application/json")
+                        .header("HTTP-Referer", "https://localhost") // Required by some AI APIs
+                        .header("X-Title", "Devotional Generator") // Helps identify the application
+                        .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+                        .build();
 
-            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                var response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() != 200) {
-                String errorBody = response.body();
-                log.error("API Error Response: {}", errorBody);
-                throw new RuntimeException("API request failed with status " + response.statusCode()
-                        + ". Error: " + errorBody);
+                if (response.statusCode() != 200) {
+                    String errorBody = response.body();
+                    log.error("API Error Response: {}", errorBody);
+                    throw new RuntimeException("API request failed with status " + response.statusCode()
+                            + ". Error: " + errorBody);
+                }
+
+                return response.body();
+            } catch (Exception e) {
+                log.error("Failed to communicate with OpenRouter API", e);
+                throw new RuntimeException("Error while requesting devotional: " + e.getMessage(), e);
             }
-
-            return response.body();
-        } catch (Exception e) {
-            log.error("Failed to communicate with OpenRouter API", e);
-            throw new RuntimeException("Error while requesting devotional: " + e.getMessage(), e);
-        }
+        }, executor);
     }
 
     private void validateBibleVerse(BibleVerse bibleVerse) {

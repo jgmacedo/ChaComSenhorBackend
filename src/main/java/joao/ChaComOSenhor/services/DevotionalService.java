@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 @Service
@@ -20,6 +23,7 @@ public class DevotionalService {
     private final DevotionalRepository devotionalRepository;
     private final AiService aiService;
     private final BibleVerseRepository bibleVerseRepository;
+    private final ExecutorService executor = Executors.newCachedThreadPool();
 
 
     @Autowired
@@ -31,13 +35,15 @@ public class DevotionalService {
     }
 
     @Transactional
-    public Devotional saveDevotional(Devotional devotional) {
-        try {
-            return devotionalRepository.save(devotional);
-        } catch (Exception e) {
-            logger.severe("Error saving devotional: " + e.getMessage());
-            throw new RuntimeException("Failed to save devotional", e);
-        }
+    public CompletableFuture<Devotional> saveDevotional(Devotional devotional) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return devotionalRepository.save(devotional);
+            } catch (Exception e) {
+                logger.severe("Error saving devotional: " + e.getMessage());
+                throw new RuntimeException("Failed to save devotional", e);
+            }
+        }, executor);
     }
 
     @Transactional(readOnly = true)
@@ -57,22 +63,23 @@ public class DevotionalService {
     }
 
     @Transactional
-    public Devotional generateCompleteDevotional(Long verseId, LocalDate date) {
-        BibleVerse bibleVerse = bibleVerseRepository.findById(verseId)
-                .orElseThrow(() -> new ResourceNotFoundException("Bible verse not found with id: " + verseId));
+    public CompletableFuture<Devotional> generateCompleteDevotional(Long verseId, LocalDate date) {
+        return CompletableFuture.supplyAsync(() -> {
+            BibleVerse bibleVerse = bibleVerseRepository.findById(verseId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Bible verse not found with id: " + verseId));
 
-        if (checkIfDevotionalExistsForDate(date)) {
-            throw new IllegalStateException("A devotional already exists for date: " + date);
-        }
-
-        try {
-            Devotional devotional = aiService.generateDevotional(bibleVerse);
-            devotional.setBibleVerse(bibleVerse);
-            devotional.setDate(date);
-            return devotional;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to generate devotional: " + e.getMessage(), e);
-        }
+            if (checkIfDevotionalExistsForDate(date)) {
+                throw new IllegalStateException("A devotional already exists for date: " + date);
+            }
+            return bibleVerse;
+        }, executor).thenCompose(bibleVerse ->
+            aiService.generateDevotional((BibleVerse) bibleVerse)
+                .thenApply(devotional -> {
+                    devotional.setBibleVerse((BibleVerse) bibleVerse);
+                    devotional.setDate(date);
+                    return devotional;
+                })
+        ).exceptionally(e -> { throw new RuntimeException("Failed to generate devotional: " + e.getMessage(), e); });
     }
 
     public List<LocalDate> getAllDevotionalDates() {

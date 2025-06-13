@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RestController
@@ -138,31 +139,34 @@ public class AdminController {
 
     @Transactional
     @PostMapping("/create_devotional/{verseId}/{devotionalDate}")
-    public ResponseEntity<ApiResponseDTO<DevotionalCreatorDTO>> createDevotional(
+    public CompletableFuture<ResponseEntity<ApiResponseDTO<DevotionalCreatorDTO>>> createDevotional(
             @PathVariable("verseId") Long verseId,
             @PathVariable("devotionalDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestBody(required = false) Object dummy) {
         // Accepts an optional dummy body to avoid 401/415 errors when frontend sends an empty JSON body
-        try {
-            Devotional devotional = devotionalService.generateCompleteDevotional(verseId, date);
-            Devotional savedDevotional = devotionalService.saveDevotional(devotional);
-
-            log.info("Devotional created successfully for verseId: {} and date: {}", verseId, date);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponseDTO.success(DevotionalCreatorDTO.fromDevotional(savedDevotional)));
-        } catch (IllegalStateException e) {
-            log.warn("Conflict while creating devotional for verseId: {} and date: {}. Error: {}", verseId, date, e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ApiResponseDTO.error(e.getMessage()));
-        } catch (ResourceNotFoundException e) {
-            log.warn("Bible verse not found for verseId: {} and date: {}", verseId, date);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponseDTO.error("Bible verse not found"));
-        } catch (Exception e) {
-            log.error("Unexpected error while creating devotional for verseId: {} and date: {}", verseId, date, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponseDTO.error("Error generating devotional"));
-        }
+        return devotionalService.generateCompleteDevotional(verseId, date)
+                .thenCompose(devotional -> devotionalService.saveDevotional(devotional))
+                .thenApply(savedDevotional -> {
+                    log.info("Devotional created successfully for verseId: {} and date: {}", verseId, date);
+                    return ResponseEntity.status(HttpStatus.CREATED)
+                            .body(ApiResponseDTO.success(DevotionalCreatorDTO.fromDevotional(savedDevotional)));
+                })
+                .exceptionally(e -> {
+                    Throwable cause = e.getCause() != null ? e.getCause() : e;
+                    if (cause instanceof IllegalStateException) {
+                        log.warn("Conflict while creating devotional for verseId: {} and date: {}. Error: {}", verseId, date, cause.getMessage());
+                        return ResponseEntity.status(HttpStatus.CONFLICT)
+                                .body(ApiResponseDTO.error(cause.getMessage()));
+                    } else if (cause instanceof ResourceNotFoundException) {
+                        log.warn("Bible verse not found for verseId: {} and date: {}", verseId, date);
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                .body(ApiResponseDTO.error("Bible verse not found"));
+                    } else {
+                        log.error("Unexpected error while creating devotional for verseId: {} and date: {}", verseId, date, cause);
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(ApiResponseDTO.error("Error generating devotional"));
+                    }
+                });
     }
 
     @Transactional
