@@ -136,10 +136,10 @@ public class AdminController {
     }
 
     @Transactional
-    @PostMapping("/create_devotional")
+    @PostMapping("/create_devotional/{verseId}/{devotionalDate}")
     public ResponseEntity<ApiResponseDTO<DevotionalCreatorDTO>> createDevotional(
-            @RequestHeader("verse-id") Long verseId,
-            @RequestHeader("devotional-date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @PathVariable("verseId") Long verseId,
+            @PathVariable("devotionalDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         try {
             Devotional devotional = devotionalService.generateCompleteDevotional(verseId, date);
             Devotional savedDevotional = devotionalService.saveDevotional(devotional);
