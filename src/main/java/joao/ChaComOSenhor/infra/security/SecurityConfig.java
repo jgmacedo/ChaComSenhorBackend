@@ -1,5 +1,6 @@
 package joao.ChaComOSenhor.infra.security;
 
+import jakarta.servlet.http.HttpServletResponse;
 import joao.ChaComOSenhor.domain.user.User;
 import joao.ChaComOSenhor.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
