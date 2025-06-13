@@ -9,8 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Service class for handling JWT token generation and validation.
@@ -62,11 +61,12 @@ public class TokenService {
     }
 
     /**
-     * Generates the expiration date for the JWT token.
+     * Generates the expiration date for the JWT token (1 hour from now, UTC).
      *
      * @return the expiration date as an Instant
      */
     private Instant genExpirationDate() {
-        return LocalDateTime.now().plusHours(1).toInstant(ZoneOffset.of("-03:00"));
+        // Corrected logic: 1 hour from the current UTC instant
+        return Instant.now().plus(1, ChronoUnit.HOURS);
     }
 }
