@@ -142,7 +142,7 @@ public class AdminController {
             @PathVariable("verseId") Long verseId,
             @PathVariable("devotionalDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestBody(required = false) Object dummy) {
-        this.dummy = dummy;
+        // Accepts an optional dummy body to avoid 401/415 errors when frontend sends an empty JSON body
         try {
             Devotional devotional = devotionalService.generateCompleteDevotional(verseId, date);
             Devotional savedDevotional = devotionalService.saveDevotional(devotional);
