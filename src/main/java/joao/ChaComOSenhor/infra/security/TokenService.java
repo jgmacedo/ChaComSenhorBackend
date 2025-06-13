@@ -67,6 +67,6 @@ public class TokenService {
      */
     private Instant genExpirationDate() {
         // Corrected logic: 1 hour from the current UTC instant
-        return Instant.now().plus(1, ChronoUnit.HOURS);
+        return Instant.now().plus(10, ChronoUnit.HOURS);
     }
 }
