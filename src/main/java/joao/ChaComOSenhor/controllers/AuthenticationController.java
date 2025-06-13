@@ -52,8 +52,8 @@ public class AuthenticationController {
             }
 
             // Validate password strength (at least 8 characters, 1 number, 1 letter)
-            if (!dto.password().matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$")) {
-                return ResponseEntity.badRequest().body("A senha deve ter pelo menos 8 caracteres e conter pelo menos uma letra e um número");
+            if (!dto.password().matches("^(?=.*[A-Za-z])(?=.*\\d).{8,}$")) {
+                return ResponseEntity.badRequest().body("Password must be at least 8 characters long and contain at least one letter and one number");
             }
 
             // Check if user exists
