@@ -144,16 +144,19 @@ public class AdminController {
             Devotional devotional = devotionalService.generateCompleteDevotional(verseId, date);
             Devotional savedDevotional = devotionalService.saveDevotional(devotional);
 
+            log.info("Devotional created successfully for verseId: {} and date: {}", verseId, date);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponseDTO.success(DevotionalCreatorDTO.fromDevotional(savedDevotional)));
         } catch (IllegalStateException e) {
+            log.warn("Conflict while creating devotional for verseId: {} and date: {}. Error: {}", verseId, date, e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ApiResponseDTO.error(e.getMessage()));
         } catch (ResourceNotFoundException e) {
+            log.warn("Bible verse not found for verseId: {} and date: {}", verseId, date);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponseDTO.error("Bible verse not found"));
         } catch (Exception e) {
-            log.error("Error creating devotional", e);
+            log.error("Unexpected error while creating devotional for verseId: {} and date: {}", verseId, date, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponseDTO.error("Error generating devotional"));
         }
