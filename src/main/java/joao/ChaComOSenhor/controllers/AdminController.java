@@ -33,6 +33,7 @@ public class AdminController {
     private final UserRepository userRepository;
     private final BibleVerseRepository bibleVerseRepository;
     private final DevotionalRepository devotionalRepository;
+    private Object dummy;
 
     public AdminController(DevotionalService devotionalService,
                            UserRepository userRepository,
@@ -139,7 +140,9 @@ public class AdminController {
     @PostMapping("/create_devotional/{verseId}/{devotionalDate}")
     public ResponseEntity<ApiResponseDTO<DevotionalCreatorDTO>> createDevotional(
             @PathVariable("verseId") Long verseId,
-            @PathVariable("devotionalDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @PathVariable("devotionalDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestBody(required = false) Object dummy) {
+        this.dummy = dummy;
         try {
             Devotional devotional = devotionalService.generateCompleteDevotional(verseId, date);
             Devotional savedDevotional = devotionalService.saveDevotional(devotional);
